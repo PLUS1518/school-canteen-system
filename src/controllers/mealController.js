@@ -54,55 +54,68 @@ const mealController = {
   },
   
   // Создать новое блюдо (только для повара/админа)
-  createMeal: async (req, res) => {
-    try {
-      const {
-        name,
-        description,
-        price,
-        category,
-        type,
-        calories,
-        ingredients,
-        allergens,
-        stock,
-        imageUrl
-      } = req.body;
-      
-      if (!name || !price) {
-        return res.status(400).json({
-          success: false,
-          error: 'Заполните название и цену'
-        });
-      }
-      
-      const meal = await Meal.create({
-        name,
-        description: description || '',
-        price: parseFloat(price),
-        category: category || 'lunch',
-        type: type || 'main',
-        calories: calories || null,
-        ingredients: ingredients || '',
-        allergens: allergens || '',
-        stock: stock || 100,
-        imageUrl: imageUrl || '',
-        isAvailable: true
-      });
-      
-      res.status(201).json({
-        success: true,
-        message: 'Блюдо создано',
-        meal
-      });
-    } catch (error) {
-      console.error('Ошибка создания блюда:', error);
-      res.status(500).json({
+createMeal: async (req, res) => {
+  try {
+    console.log('📦 Body получен:', req.body);
+    console.log('📦 Headers:', req.headers);
+    
+    // Проверяем что body вообще есть
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({
         success: false,
-        error: 'Ошибка сервера'
+        error: 'Тело запроса пустое',
+        receivedBody: req.body
       });
     }
-  },
+    
+    const {
+      name,
+      description,
+      price,
+      category,
+      type,
+      calories,
+      ingredients,
+      allergens,
+      stock,
+      imageUrl
+    } = req.body;
+    
+    if (!name || !price) {
+      return res.status(400).json({
+        success: false,
+        error: 'Заполните название и цену'
+      });
+    }
+    
+    const meal = await Meal.create({
+      name,
+      description: description || '',
+      price: parseFloat(price),
+      category: category || 'lunch',
+      type: type || 'main',
+      calories: calories || null,
+      ingredients: ingredients || '',
+      allergens: allergens || '',
+      stock: stock || 100,
+      imageUrl: imageUrl || '',
+      isAvailable: true
+    });
+    
+    res.status(201).json({
+      success: true,
+      message: 'Блюдо создано',
+      meal
+    });
+  } catch (error) {
+    console.error('Ошибка создания блюда:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Ошибка сервера',
+      details: error.message
+    });
+  }
+},
   
   // Обновить блюдо (только для повара/админа)
   updateMeal: async (req, res) => {

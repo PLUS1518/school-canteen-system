@@ -1,5 +1,10 @@
 const express = require('express');
 const router = express.Router();
+
+// ДОБАВЬ ЭТИ ДВЕ СТРОКИ:
+router.use(express.json());
+router.use(express.urlencoded({ extended: true }));
+
 const mealController = require('../controllers/mealController');
 const authMiddleware = require('../middleware/auth');
 

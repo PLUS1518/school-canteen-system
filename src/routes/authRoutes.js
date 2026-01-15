@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
 
-// Импортируем контроллеры и middleware
+// ДОБАВЬ ТУТ:
+router.use(express.json());
+router.use(express.urlencoded({ extended: true }));
+
 const authController = require('../controllers/authController');
 const authMiddleware = require('../middleware/auth');
 
