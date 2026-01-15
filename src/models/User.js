@@ -66,4 +66,17 @@ User.prototype.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
+// Установим связи после определения всех моделей
+const setupAssociations = () => {
+  const Order = require('./Order');
+  
+  // Пользователь имеет много заказов
+  User.hasMany(Order, { foreignKey: 'userId', as: 'orders' });
+  Order.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+};
+
+// Вызовем позже, когда все модели будут загружены
+User.setupAssociations = setupAssociations;
+
+
 module.exports = User;

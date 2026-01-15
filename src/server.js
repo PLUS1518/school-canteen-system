@@ -6,6 +6,22 @@ require('dotenv').config();
 // Импорт базы данных и моделей
 const { sequelize } = require('./config/database');
 const User = require('./models/User');
+const Meal = require('./models/Meal');
+const Order = require('./models/Order');
+const Feedback = require('./models/Feedback');
+
+// Настройка связей между моделями
+User.setupAssociations && User.setupAssociations();
+
+// Дополнительные связи
+Meal.hasMany(Order, { foreignKey: 'mealId', as: 'orders' });
+Order.belongsTo(Meal, { foreignKey: 'mealId', as: 'meal' });
+
+Meal.hasMany(Feedback, { foreignKey: 'mealId', as: 'feedbacks' });
+Feedback.belongsTo(Meal, { foreignKey: 'mealId', as: 'meal' });
+
+User.hasMany(Feedback, { foreignKey: 'userId', as: 'feedbacks' });
+Feedback.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 // Импорт роутов
 const authRoutes = require('./routes/authRoutes');
