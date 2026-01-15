@@ -1,6 +1,7 @@
 const express = require('express');
 const mealRoutes = require('./routes/mealRoutes');
 const cors = require('cors');
+const orderRoutes = require('./routes/orderRoutes');
 require('dotenv').config();
 
 // Импорт базы данных и моделей
@@ -35,6 +36,7 @@ app.use(cors());
 app.use(express.json());  
 app.use(express.urlencoded({ extended: true }));
 app.use('/api/meals', mealRoutes);
+app.use('/api/orders', orderRoutes);
 
 // Логгер запросов
 app.use((req, res, next) => {
@@ -80,6 +82,14 @@ app.get('/', (req, res) => {
       public: {
         health: 'GET /api/health',
         test: 'GET /api/test'
+      },
+      orders: {
+      create: 'POST /api/orders (только student)',
+      myOrders: 'GET /api/orders/my (только student)',
+      receive: 'PATCH /api/orders/:orderId/receive (только student)',
+      cookToday: 'GET /api/orders/cook/today (только cook/admin)',
+      cookIssue: 'PATCH /api/orders/cook/:orderId/issue (только cook/admin)',
+      adminStats: 'GET /api/orders/admin/stats (только admin)'
       }
     }
   });
