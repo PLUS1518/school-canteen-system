@@ -1,20 +1,29 @@
 const express = require('express');
-const mealRoutes = require('./routes/mealRoutes');
 const cors = require('cors');
-const orderRoutes = require('./routes/orderRoutes');
+const { sequelize } = require('./config/database');
 require('dotenv').config();
 
-// Импорт базы данных и моделей
-const { sequelize } = require('./config/database');
+// Импорт моделей
 const User = require('./models/User');
 const Meal = require('./models/Meal');
 const Order = require('./models/Order');
 const Feedback = require('./models/Feedback');
+const PurchaseRequest = require('./models/PurchaseRequest');
+
+// Импорт роутов (ВНИМАНИЕ: Убедитесь, что файл userRoutes.js существует. Если нет, удалите эту строку.)
+const authRoutes = require('./routes/authRoutes');
+const mealRoutes = require('./routes/mealRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+const feedbackRoutes = require('./routes/feedbackRoutes');
+const purchaseRequestRoutes = require('./routes/purchaseRequestRoutes');
+
+const app = express();
 
 // Настройка связей между моделями
-User.setupAssociations && User.setupAssociations();
+if (typeof User.setupAssociations === 'function') {
+  User.setupAssociations();
+}
 
-// Дополнительные связи
 Meal.hasMany(Order, { foreignKey: 'mealId', as: 'orders' });
 Order.belongsTo(Meal, { foreignKey: 'mealId', as: 'meal' });
 
@@ -24,41 +33,34 @@ Feedback.belongsTo(Meal, { foreignKey: 'mealId', as: 'meal' });
 User.hasMany(Feedback, { foreignKey: 'userId', as: 'feedbacks' });
 Feedback.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
-// Импорт роутов
-const authRoutes = require('./routes/authRoutes');
+User.hasMany(PurchaseRequest, { foreignKey: 'chefId', as: 'purchaseRequests' });
+PurchaseRequest.belongsTo(User, { foreignKey: 'chefId', as: 'chef' });
 
-const app = express();
-
-// ======================
 // Middleware
-// ======================
 app.use(cors());
-app.use(express.json());  
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/api/meals', mealRoutes);
-app.use('/api/orders', orderRoutes);
 
 // Логгер запросов
 app.use((req, res, next) => {
   console.log(`${new Date().toLocaleTimeString()} - ${req.method} ${req.url}`);
   next();
 });
+
+// Подключение маршрутов
+app.use('/api/auth', authRoutes);
+app.use('/api/meals', mealRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/feedback', feedbackRoutes);
+app.use('/api/purchase-requests', purchaseRequestRoutes);
+
+// Тестовый маршрут для отладки
 app.post('/api/debug', (req, res) => {
   console.log('DEBUG body:', req.body);
   res.json({ body: req.body, message: 'Test successful' });
 });
 
-// ======================
-// Подключение роутов
-// ======================
-app.use('/api/auth', authRoutes);
-app.use('/api/meals', mealRoutes);
-
-// ======================
-// Маршруты
-// ======================
-
-// Главная страница
+// Основные маршруты
 app.get('/', (req, res) => {
   res.json({
     success: true,
@@ -79,23 +81,34 @@ app.get('/', (req, res) => {
         update: 'PUT /api/meals/:id (только cook/admin)',
         delete: 'DELETE /api/meals/:id (только admin)'
       },
+      orders: {
+        create: 'POST /api/orders (только student)',
+        myOrders: 'GET /api/orders/my (только student)',
+        receive: 'PATCH /api/orders/:orderId/receive (только student)',
+        cookToday: 'GET /api/orders/cook/today (только cook/admin)',
+        cookIssue: 'PATCH /api/orders/cook/:orderId/issue (только cook/admin)',
+        adminStats: 'GET /api/orders/admin/stats (только admin)'
+      },
+      feedback: {
+        create: 'POST /api/feedback (только student)',
+        getByMeal: 'GET /api/feedback/meal/:mealId',
+        delete: 'DELETE /api/feedback/:id (админ или автор)'
+      },
+      purchase: {
+        create: 'POST /api/purchase-requests (только cook)',
+        myRequests: 'GET /api/purchase-requests/my (только cook)',
+        getAll: 'GET /api/purchase-requests (только admin)',
+        updateStatus: 'PATCH /api/purchase-requests/:id/status (только admin)'
+      },
       public: {
         health: 'GET /api/health',
-        test: 'GET /api/test'
-      },
-      orders: {
-      create: 'POST /api/orders (только student)',
-      myOrders: 'GET /api/orders/my (только student)',
-      receive: 'PATCH /api/orders/:orderId/receive (только student)',
-      cookToday: 'GET /api/orders/cook/today (только cook/admin)',
-      cookIssue: 'PATCH /api/orders/cook/:orderId/issue (только cook/admin)',
-      adminStats: 'GET /api/orders/admin/stats (только admin)'
+        test: 'GET /api/test',
+        dbTest: 'GET /api/db-test'
       }
     }
   });
 });
 
-// Проверка здоровья сервера
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
@@ -105,7 +118,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Тестовый маршрут
 app.get('/api/test', (req, res) => {
   res.json({
     message: 'Тестовый эндпоинт работает!',
@@ -117,19 +129,13 @@ app.get('/api/test', (req, res) => {
   });
 });
 
-// Тест базы данных
 app.get('/api/db-test', async (req, res) => {
   try {
-    // Проверяем подключение к БД
     await sequelize.authenticate();
-    
-    // Синхронизируем модели (создаем таблицы если их нет)
     await sequelize.sync({ force: false });
     
-    // Проверяем есть ли пользователи
     const userCount = await User.count();
     
-    // Создаем тестового пользователя если база пустая
     if (userCount === 0) {
       await User.create({
         login: 'testuser',
@@ -140,7 +146,6 @@ app.get('/api/db-test', async (req, res) => {
       console.log('✅ Создан тестовый пользователь');
     }
     
-    // Получаем всех пользователей
     const users = await User.findAll({
       attributes: ['id', 'login', 'role', 'fullName', 'createdAt']
     });
@@ -164,11 +169,7 @@ app.get('/api/db-test', async (req, res) => {
   }
 });
 
-// ======================
 // Обработка ошибок
-// ======================
-
-// Обработка 404 ошибок
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -178,7 +179,6 @@ app.use((req, res) => {
   });
 });
 
-// Обработка ошибок сервера
 app.use((err, req, res, next) => {
   console.error('🔥 Ошибка сервера:', err);
   res.status(500).json({
@@ -188,22 +188,17 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ======================
 // Запуск сервера
-// ======================
 const PORT = process.env.PORT || 3000;
 
 const startServer = async () => {
   try {
-    // Проверяем подключение к БД
     await sequelize.authenticate();
     console.log('✅ Подключение к базе данных установлено');
     
-    // Синхронизируем модели
     await sequelize.sync({ force: false });
     console.log('✅ Модели базы данных синхронизированы');
     
-    // Запускаем сервер
     app.listen(PORT, () => {
       console.log(`
   ========================================
@@ -213,20 +208,6 @@ const startServer = async () => {
   📡 Порт: ${PORT}
   🌐 Режим: ${process.env.NODE_ENV}
   🔗 Локальная ссылка: http://localhost:${PORT}
-  
-  📋 Доступные маршруты:
-  
-  🔐 Аутентификация:
-     • POST /api/auth/register  - Регистрация
-     • POST /api/auth/login     - Авторизация
-     • GET  /api/auth/profile   - Профиль (требует токен)
-     • GET  /api/auth/users     - Все пользователи (только admin)
-  
-  🌐 Публичные:
-     • GET  /                   - Главная страница
-     • GET  /api/health         - Статус сервера
-     • GET  /api/test           - Тестовый endpoint
-     • GET  /api/db-test        - Тест базы данных
   
   ⏰ ${new Date().toLocaleString()}
   ========================================
