@@ -1,4 +1,5 @@
 const express = require('express');
+const mealRoutes = require('./routes/mealRoutes');
 const cors = require('cors');
 require('dotenv').config();
 
@@ -14,6 +15,7 @@ const app = express();
 // ======================
 // Middleware
 // ======================
+app.use('/api/meals', mealRoutes);
 app.use(cors());
 app.use(express.json());
 
@@ -45,10 +47,17 @@ app.get('/', (req, res) => {
         profile: 'GET /api/auth/profile (требует токен)',
         users: 'GET /api/auth/users (только admin)'
       },
+      meals: {
+        getAll: 'GET /api/meals',
+        getToday: 'GET /api/meals/today',
+        getById: 'GET /api/meals/:id',
+        create: 'POST /api/meals (только cook/admin)',
+        update: 'PUT /api/meals/:id (только cook/admin)',
+        delete: 'DELETE /api/meals/:id (только admin)'
+      },
       public: {
         health: 'GET /api/health',
-        test: 'GET /api/test',
-        dbTest: 'GET /api/db-test'
+        test: 'GET /api/test'
       }
     }
   });
