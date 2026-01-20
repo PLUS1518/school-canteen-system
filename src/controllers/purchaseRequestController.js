@@ -6,19 +6,20 @@ const User = require('../models/User');
 exports.createRequest = async (req, res) => {
   try {
     const { items, reason } = req.body;
-    const chefId = req.userId; // ID из authMiddleware
+    const chefId = req.userId;
 
-    // Базовая валидация
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, error: 'Необходимо указать минимум один товар' });
     }
 
-    // Рассчет суммы (можно усложнить логикой прайса)
-    const totalAmount = items.reduce((sum, item) => sum + (item.estimatedPrice || 0) * item.quantity, 0);
+    // Простой расчёт суммы
+    const totalAmount = items.reduce((sum, item) => {
+      return sum + (parseFloat(item.estimatedPrice) || 0) * (parseInt(item.quantity) || 0);
+    }, 0);
 
     const request = await PurchaseRequest.create({
       chefId,
-      items,
+      items: JSON.stringify(items), // Убедитесь, что это JSON
       totalAmount,
       reason,
       status: 'pending'
@@ -27,7 +28,7 @@ exports.createRequest = async (req, res) => {
     res.status(201).json({ success: true, request });
   } catch (error) {
     console.error('Ошибка создания заявки:', error);
-    res.status(500).json({ success: false, error: 'Ошибка сервера' });
+    res.status(500).json({ success: false, error: 'Внутренняя ошибка сервера' });
   }
 };
 

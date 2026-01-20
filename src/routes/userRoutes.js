@@ -1,0 +1,1 @@
+router.patch('/balance', verifyToken, userController.updateBalance);

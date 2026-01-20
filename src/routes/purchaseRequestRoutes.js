@@ -1,15 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const purchaseRequestController = require('../controllers/purchaseRequestController');
-const { authenticate, authorizeRoles } = require('../middleware/authMiddleware');
+const { verifyToken, checkRole } = require('../middleware/auth');
 
 // Повар создает заявку
-router.post('/', authenticate, authorizeRoles(['cook']), purchaseRequestController.createRequest);
+router.post('/', verifyToken, checkRole('cook'), purchaseRequestController.createRequest);
+
 // Повар смотрит свои заявки
-router.get('/my', authenticate, authorizeRoles(['cook']), purchaseRequestController.getMyRequests);
+router.get('/my', verifyToken, checkRole('cook'), purchaseRequestController.getMyRequests);
+
 // Админ смотрит все заявки
-router.get('/', authenticate, authorizeRoles(['admin']), purchaseRequestController.getAllRequests);
+router.get('/', verifyToken, checkRole('admin'), purchaseRequestController.getAllRequests);
+
 // Админ согласовывает/отклоняет
-router.patch('/:id/status', authenticate, authorizeRoles(['admin']), purchaseRequestController.updateRequestStatus);
+router.patch('/:id/status', verifyToken, checkRole('admin'), purchaseRequestController.updateRequestStatus);
 
 module.exports = router;

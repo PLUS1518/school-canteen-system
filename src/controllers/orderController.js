@@ -1,6 +1,7 @@
 const Order = require('../models/Order');
 const Meal = require('../models/Meal');
 const User = require('../models/User');
+const { sequelize } = require('../config/database');
 
 const orderController = {
   // Создать новый заказ (ученик)
@@ -276,49 +277,45 @@ const orderController = {
     }
   },
 
-  // Статистика по заказам (админ)
+    // Статистика по заказам (админ)
   getOrderStats: async (req, res) => {
-    try {
-      const { startDate, endDate } = req.query;
-      
-      // Простая статистика - позже можно добавить сложные запросы
-      const totalOrders = await Order.count();
-      const todayOrders = await Order.count({
-        where: { date: new Date().toISOString().split('T')[0] }
-      });
-      
-      const totalRevenue = await Order.sum('price', {
-        where: { status: ['paid', 'issued'] }
-      });
+  try {
+    // Простейшая статистика без сложных запросов
+    const totalOrders = await Order.count();
+    
+    const todayOrders = await Order.count({
+      where: { status: ['paid', 'issued'] }
+    });
+    
+    // Простая сумма без group by
+    const orders = await Order.findAll({
+      where: { status: ['paid', 'issued'] },
+      attributes: ['price']
+    });
+    
+    const totalRevenue = orders.reduce((sum, order) => sum + parseFloat(order.price || 0), 0);
+    
+    // Без сложных группировок
+    const popularMeals = [];
 
-      const popularMeals = await Order.findAll({
-        attributes: ['mealId'],
-        group: ['mealId'],
-        order: [[sequelize.fn('COUNT', sequelize.col('mealId')), 'DESC']],
-        limit: 5,
-        include: [
-          { model: Meal, as: 'meal', attributes: ['name'] }
-        ]
-      });
+    res.json({
+      success: true,
+      stats: {
+        totalOrders,
+        todayOrders,
+        totalRevenue,
+        popularMeals
+      }
+    });
 
-      res.json({
-        success: true,
-        stats: {
-          totalOrders,
-          todayOrders,
-          totalRevenue: totalRevenue || 0,
-          popularMeals
-        }
-      });
-
-    } catch (error) {
-      console.error('Ошибка получения статистики:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Ошибка сервера'
-      });
-    }
+  } catch (error) {
+    console.error('Ошибка получения статистики:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Ошибка сервера при получении статистики'
+    });
   }
+}
 };
 
 module.exports = orderController;

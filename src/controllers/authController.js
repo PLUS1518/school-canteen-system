@@ -39,8 +39,8 @@ const authController = {
       // Создание токена
       const token = jwt.sign(
         { userId: user.id, role: user.role, login: user.login },
-        process.env.JWT_SECRET,
-        { expiresIn: '7d' }
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '24h' }
       );
       
       // Ответ без пароля
@@ -96,8 +96,8 @@ const authController = {
       // Создание токена
       const token = jwt.sign(
         { userId: user.id, role: user.role, login: user.login },
-        process.env.JWT_SECRET,
-        { expiresIn: '7d' }
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '24h' }
       );
       
       // Ответ без пароля

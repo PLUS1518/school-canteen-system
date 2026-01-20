@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 
 const authenticate = async (req, res, next) => {
   try {
@@ -10,14 +9,9 @@ const authenticate = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    const user = await User.findByPk(decoded.id);
-
-    if (!user) {
-      throw new Error();
-    }
-
-    req.userId = user.id;
-    req.userRole = user.role;
+    // ИСПРАВЛЕНО: используем decoded.userId и decoded.role как в auth.js
+    req.userId = decoded.userId;   // <-- было decoded.id
+    req.userRole = decoded.role;
     next();
   } catch (error) {
     res.status(401).json({ error: 'Требуется аутентификация' });
