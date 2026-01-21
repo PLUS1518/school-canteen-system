@@ -18,4 +18,10 @@ Thumbs.db
 
 # IDE
 .vscode/
-.idea/
+.idea/node_modules/ 
+ 
+# Frontend 
+frontend/node_modules 
+frontend/build 
+frontend/.env 
+frontend/*.log 
