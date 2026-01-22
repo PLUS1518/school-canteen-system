@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Зависимости
 node_modules/
 
@@ -25,3 +26,12 @@ frontend/node_modules
 frontend/build 
 frontend/.env 
 frontend/*.log 
+=======
+# Frontend dependencies
+frontend/node_modules
+frontend/build
+
+# Frontend environment
+frontend/.env*
+frontend/*.log
+>>>>>>> b74ed30 (feat: фронтенд React приложение для школьной столовой)
