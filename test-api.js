@@ -4,7 +4,18 @@ const http = require('http');
 const API_BASE = 'http://localhost:3000';
 let studentToken = '';
 let cookToken = '';
-let adminToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsInJvbGUiOiJhZG1pbiIsImxvZ2luIjoiYWRtaW4xIiwiaWF0IjoxNzY4OTQ1MTQ3LCJleHAiOjE3Njk1NDk5NDd9.yQ_TMQkfsw8EaJZYvH36gU34mWA5XdD7jhZtdNzGT2M'; // 🔴 ЗАМЕНИТЕ НА РЕАЛЬНЫЙ ТОКЕН
+let adminToken = '';
+// Получаем свежий токен админа
+const adminLogin = await request('POST', '/api/auth/login', {
+  login: 'admin1',
+  password: 'pass123'
+});
+if (adminLogin.status === 200 && adminLogin.body.token) {
+  adminToken = adminLogin.body.token;
+  console.log('   ✅ Админ авторизован');
+} else {
+  console.log('   ❌ Не удалось авторизовать админа:', adminLogin.body);
+}
 let createdOrderId = null;
 let createdFeedbackId = null;
 let createdPurchaseRequestId = null;

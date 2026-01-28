@@ -208,4 +208,21 @@ createMeal: async (req, res) => {
   }
 };
 
+
+
+// В mealController.js
+exports.checkStock = async (req, res) => {
+  try {
+    const meals = await Meal.findAll({
+      attributes: ['id', 'name', 'price', 'stock'],
+      where: { stock: { [Op.lt]: 10 } } // Меньше 10 порций
+    });
+    
+    res.json({ success: true, lowStockMeals: meals });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Ошибка сервера' });
+  }
+};
+
 module.exports = mealController;
+

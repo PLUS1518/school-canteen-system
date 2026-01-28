@@ -9,18 +9,27 @@ const PurchaseRequest = sequelize.define('PurchaseRequest', {
   },
   chefId: {
     type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'users',
-      key: 'id'
-    }
+    allowNull: false
   },
   items: {
     type: DataTypes.JSON,
     allowNull: false,
     defaultValue: [],
     validate: {
-      isArray: true
+      isValidJSON(value) {
+        try {
+          if (typeof value === 'string') {
+            const parsed = JSON.parse(value);
+            if (!Array.isArray(parsed)) {
+              throw new Error('Должен быть массив');
+            }
+          } else if (!Array.isArray(value)) {
+            throw new Error('Должен быть массив');
+          }
+        } catch (error) {
+          throw new Error('Items должен быть валидным JSON массивом');
+        }
+      }
     }
   },
   totalAmount: {
@@ -48,11 +57,10 @@ const PurchaseRequest = sequelize.define('PurchaseRequest', {
   }
 }, {
   tableName: 'purchase_requests',
-  timestamps: true,
-  updatedAt: 'updatedAt'
+  timestamps: true
 });
 
-// Связи
+// Ассоциации
 PurchaseRequest.associate = function(models) {
   PurchaseRequest.belongsTo(models.User, {
     foreignKey: 'chefId',

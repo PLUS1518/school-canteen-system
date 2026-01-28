@@ -1,6 +1,10 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
+
+
+
+
 const Meal = sequelize.define('Meal', {
   id: {
     type: DataTypes.INTEGER,
@@ -49,6 +53,11 @@ const Meal = sequelize.define('Meal', {
   stock: {
     type: DataTypes.INTEGER,
     defaultValue: 100
+  },
+  stock: {
+    type: DataTypes.INTEGER,
+    defaultValue: 100,
+    allowNull: false
   },
   imageUrl: {
     type: DataTypes.STRING,

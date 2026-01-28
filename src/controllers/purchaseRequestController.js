@@ -5,30 +5,69 @@ const User = require('../models/User');
 // Повар создает заявку
 exports.createRequest = async (req, res) => {
   try {
+    console.log('📝 Получены данные заявки:', req.body);
+    
     const { items, reason } = req.body;
     const chefId = req.userId;
 
+    // Валидация
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ success: false, error: 'Необходимо указать минимум один товар' });
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Необходимо указать минимум один товар' 
+      });
     }
 
-    // Простой расчёт суммы
-    const totalAmount = items.reduce((sum, item) => {
-      return sum + (parseFloat(item.estimatedPrice) || 0) * (parseInt(item.quantity) || 0);
+    // Проверяем структуру каждого item
+    const validatedItems = items.map((item, index) => {
+      if (!item.productName || !item.quantity || !item.unit) {
+        throw new Error(`Товар #${index+1} должен содержать productName, quantity и unit`);
+      }
+      
+      return {
+        productName: String(item.productName),
+        quantity: parseInt(item.quantity) || 1,
+        unit: String(item.unit),
+        estimatedPrice: parseFloat(item.estimatedPrice) || 0
+      };
+    });
+
+    // Рассчитываем сумму
+    const totalAmount = validatedItems.reduce((sum, item) => {
+      return sum + (item.estimatedPrice * item.quantity);
     }, 0);
 
+    console.log('💰 Рассчитанная сумма:', totalAmount);
+
+    // Создаём заявку - передаем массив напрямую, Sequelize сам сериализует
     const request = await PurchaseRequest.create({
       chefId,
-      items: JSON.stringify(items), // Убедитесь, что это JSON
+      items: validatedItems, // Массив, не строка!
       totalAmount,
-      reason,
+      reason: reason || '',
       status: 'pending'
     });
 
-    res.status(201).json({ success: true, request });
+    res.status(201).json({ 
+      success: true, 
+      request: request.toJSON()
+    });
+
   } catch (error) {
-    console.error('Ошибка создания заявки:', error);
-    res.status(500).json({ success: false, error: 'Внутренняя ошибка сервера' });
+    console.error('❌ Ошибка создания заявки:', error.message);
+    
+    if (error.message.includes('Товар #')) {
+      return res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      error: 'Внутренняя ошибка сервера',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 

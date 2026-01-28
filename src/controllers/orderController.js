@@ -318,4 +318,54 @@ const orderController = {
 }
 };
 
+
+// В orderController.js
+exports.generateReport = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    const where = {};
+    if (startDate && endDate) {
+      where.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
+    }
+    
+    const orders = await Order.findAll({
+      where,
+      include: [
+        { model: User, as: 'user', attributes: ['fullName', 'class'] },
+        { model: Meal, as: 'meal', attributes: ['name', 'price', 'category'] }
+      ]
+    });
+    
+    // Простой отчёт
+    const report = {
+      period: { startDate, endDate },
+      totalOrders: orders.length,
+      totalRevenue: orders.reduce((sum, order) => sum + parseFloat(order.price || 0), 0),
+      byCategory: {},
+      orders: orders.map(order => ({
+        id: order.id,
+        student: order.user.fullName,
+        class: order.user.class,
+        meal: order.meal.name,
+        price: order.price,
+        date: order.createdAt
+      }))
+    };
+    
+    // Группировка по категориям
+    orders.forEach(order => {
+      const category = order.meal.category;
+      report.byCategory[category] = (report.byCategory[category] || 0) + 1;
+    });
+    
+    res.json({ success: true, report });
+  } catch (error) {
+    console.error('Ошибка генерации отчёта:', error);
+    res.status(500).json({ success: false, error: 'Ошибка генерации отчёта' });
+  }
+};
+
+
+
 module.exports = orderController;

@@ -16,6 +16,7 @@ const mealRoutes = require('./routes/mealRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const feedbackRoutes = require('./routes/feedbackRoutes');
 const purchaseRequestRoutes = require('./routes/purchaseRequestRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 
@@ -40,6 +41,7 @@ PurchaseRequest.belongsTo(User, { foreignKey: 'chefId', as: 'chef' });
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/api/users', userRoutes);
 
 // Логгер запросов
 app.use((req, res, next) => {
